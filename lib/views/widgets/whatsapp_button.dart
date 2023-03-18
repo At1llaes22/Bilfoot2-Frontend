@@ -23,7 +23,8 @@ class _WhatsappButtonState extends State<WhatsappButton> {
     return GestureDetector(
       onTap: () => onClicked(context),
       child: Icon(
-        Icons.whatsapp,
+        //TODO WHATSAPP ICONU
+        Icons.abc,
         color: Color(!isLoading ? 0xFF25D366 : 0xFF999999),
         size: 32,
       ),

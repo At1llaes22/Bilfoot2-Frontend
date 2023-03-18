@@ -33,7 +33,8 @@ class SetPhoneModal extends StatelessWidget {
         },
         refuseButtonText: "Şimdi Değil",
         icon: const Icon(
-          Icons.whatsapp,
+          //TODO: WHATSAPP ICON BUL
+          Icons.abc,
           color: Color(0xFF25D366),
         ));
   }

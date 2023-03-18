@@ -6,7 +6,9 @@ import 'package:bilfoot/data/networking/chat_service.dart';
 import 'package:bilfoot/data/networking/match_service.dart';
 import 'package:bilfoot/data/networking/team_service.dart';
 import 'package:bilfoot/data/networking/user_service.dart';
+import 'package:dio/dio.dart';
 import "package:http/http.dart" as http;
+import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 enum Method { post, get }
 
@@ -19,9 +21,11 @@ class BilfootClient {
   }
 
   //get ip by writing ipconfig to terminal
-  final String baseUrl = "https://bilfoot2-app-rr5no.ondigitalocean.app/";
+  static String baseUrl = "https://bilfoot2-app-rr5no.ondigitalocean.app/";
   // final String baseUrl = "http://192.168.3.15:8080/";
   //User endpoints
+
+  Dio? _dio;
   final userTest = UserService.test;
   final getHomeData = UserService.getHomeData;
   final getNotifications = UserService.getUserNotifications;
@@ -64,19 +68,20 @@ class BilfootClient {
   final sendPlayerAnnouncementJoinRequest =
       AnnouncementService.sendPlayerAnnouncementJoinRequest;
 
-  Future<http.Response?> sendRequest({
+  Future<Response?> sendRequest({
     required String path,
     Map<String, dynamic>? body,
     Method method = Method.get,
   }) async {
     try {
-      var url = Uri.parse(baseUrl + path);
+      var url = (baseUrl + path);
 
       if (method == Method.get) {
-        var response = await http.get(
+        var response = await dio.get(
           url,
+
 //        body: body == null ? null : jsonEncode(body),
-          headers: {
+          data: {
             "Content-Type": "application/json",
             "Accept": "application/json",
             "Authorization": "Bearer ${Program.program.token}",
@@ -84,10 +89,11 @@ class BilfootClient {
         );
         return response;
       } else if (Method.post == method) {
-        var response = await http.post(
+        var response = await dio.post(
           url,
-          body: body == null ? null : jsonEncode(body),
-          headers: {
+          //body: body == null ? null : jsonEncode(body),
+          data: {
+            "body": {jsonEncode(body)},
             "Content-Type": "application/json",
             "Accept": "application/json",
             "Authorization": "Bearer ${Program.program.token}",
@@ -98,10 +104,21 @@ class BilfootClient {
       /*
     Response -> is_registered = false or true;
      */
-
     } on Exception catch (e) {
       print(e.toString());
     }
     return null;
+  }
+
+  Dio get dio {
+    if (_dio == null) {
+      initializeDio();
+    }
+    return _dio!;
+  }
+
+  void initializeDio() async {
+    _dio = Dio(BaseOptions(baseUrl: baseUrl));
+    _dio!.interceptors.add(PrettyDioLogger());
   }
 }

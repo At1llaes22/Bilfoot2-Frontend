@@ -3,71 +3,72 @@ import 'dart:convert';
 import 'package:bilfoot/data/models/program.dart';
 import 'package:bilfoot/data/models/team_model.dart';
 import 'package:bilfoot/data/networking/client.dart';
+import 'package:dio/dio.dart';
 import 'package:http/http.dart';
 
 class TeamService {
   static void test() {}
 
   static Future<TeamModel?> getTeamModel({required String id}) async {
-    Response? response = await BilfootClient().sendRequest(
-      path: "team/get-team-model?id=$id",
-    );
+    try {
+      var response = await BilfootClient()
+          .dio
+          .post("${BilfootClient.baseUrl}team/get-team-model?id=$id", data: {
+      });
 
-    if (response == null) {
-      //TODO
-      print("null response getTeamModel");
+      if (response.statusCode == null) {
+        return null;
+      } else if (response.statusCode! >= 400) {
+        return null;
+      }
+
+      print("get team model");
+      print(response.data);
+      if (response.data["team_model"] != null) {
+        return TeamModel.fromJson(response.data["team_model"]);
+      }
+
+      return null;
+    } on DioError catch (e) {
+      print(e.response?.data);
+      return null;
+    } catch (e) {
       return null;
     }
 
-    if (response.statusCode >= 400) {
-      //TODO
-      print("error status get team model");
-      print(response.body);
-      return null;
-    }
-
-    var jsonData = json.decode(response.body);
-    print("get team model");
-    print(jsonData);
-    if (jsonData["team_model"] != null) {
-      return TeamModel.fromJson(jsonData["team_model"]);
-    }
-
-    return null;
   }
 
   static Future<List<TeamModel>> getTeamsWithIds(
       {required List<String> ids}) async {
-    Response? response = await BilfootClient().sendRequest(
-      path: "team/get-teams-with-ids",
-      body: {"ids": ids},
-      method: Method.post,
-    );
+    try {
+      var response = await BilfootClient()
+          .dio
+          .post("${BilfootClient.baseUrl}team/get-teams-with-ids", data: {
+      });
 
-    if (response == null) {
-      //TODO
-      print("null response get teams with ids");
+      if (response.statusCode == null) {
+        return [];
+      } else if (response.statusCode! >= 400) {
+        return [];
+      }
+
+      print(response.data);
+      if (response.data["teams"] != null) {
+        List<TeamModel> teams = (response.data["teams"] as List<dynamic>)
+            .map((e) => TeamModel.fromJson(e))
+            .toList();
+
+        return teams;
+      }
+
+      return [];
+    } on DioError catch (e) {
+      print(e.response?.data);
+      return [];
+    } catch (e) {
       return [];
     }
 
-    if (response.statusCode >= 400) {
-      //TODO
-      print("error status get teams with ids");
-      print(response.body);
-      return [];
-    }
-
-    var jsonData = json.decode(response.body);
-    print(jsonData);
-    if (jsonData["teams"] != null) {
-      List<TeamModel> teams = (jsonData["teams"] as List<dynamic>)
-          .map((e) => TeamModel.fromJson(e))
-          .toList();
-
-      return teams;
-    }
-
-    return [];
   }
 
   static Future<bool> createTeam({
@@ -76,184 +77,180 @@ class TeamService {
     required String mainColor,
     required String accentColor,
   }) async {
-    Response? response = await BilfootClient().sendRequest(
-      path: "team/create-team",
-      body: {
-        "name": teamName,
-        "short_name": shortName,
-        "main_color": mainColor,
-        "accent_color": accentColor
-      },
-      method: Method.post,
-    );
+    try {
+      var response = await BilfootClient().dio.post(
+          "${BilfootClient.baseUrl}team/create-team",
+          data: {
+            "name": teamName,
+            "short_name": shortName,
+            "main_color": mainColor,
+            "accent_color": accentColor
+          });
 
-    if (response == null) {
-      //TODO
-      print("null response createTeam");
-      return false;
-    }
+      if (response.statusCode == null) {
+        return false;
+      } else if (response.statusCode! >= 400) {
+        return false;
+      }
+      if (response.data["team"] != null) {
+        Program.program.user!.teams.add(response.data["team"]["_id"]);
+        return true;
+      }
 
-    if (response.statusCode >= 400) {
-      //TODO
-      print("error status createTeam");
-      print(response.body);
-      return false;
-    }
+      print(response.data);
 
-    var jsonData = json.decode(response.body);
-    print("createTeam");
-    print(jsonData);
-    if (jsonData["team"] != null) {
-      Program.program.user!.teams.add(jsonData["team"]["_id"]);
       return true;
+    } on DioError catch (e) {
+      print(e.response?.data);
+      return false;
+    } catch (e) {
+      return false;
     }
 
-    return false;
   }
-
+  // TODO: bu nasıl get methodu amk
   static Future<bool> getTeamInvitation({
     required String fromId,
     required String toId,
     required String teamId,
   }) async {
-    Response? response = await BilfootClient().sendRequest(
-      path:
-          "team/get-team-invitation?from_id=$fromId&to_id=$toId&team_id=$teamId",
-    );
+    try {
+      var response = await BilfootClient().dio.get(
+          "${BilfootClient.baseUrl}team/get-team-invitation?from_id=$fromId&to_id=$toId&team_id=$teamId");
 
-    if (response == null) {
-      //TODO
-      print("null response get team invitation");
-      return false;
-    }
+      if (response.statusCode == null) {
+        return false;
+      } else if (response.statusCode! >= 400) {
+        return false;
+      }
 
-    if (response.statusCode >= 400) {
-      //TODO
-      print("error status get team invitation");
-      print(response.body);
-      return false;
-    }
 
-    var jsonData = json.decode(response.body);
-    print("get team invitation");
-    print(jsonData);
-    if (jsonData["invitation"] != null) {
+      if (response.data["invitation"] != null) {
+        return true;
+      }
+
+      print(response.data);
+
       return true;
+    } on DioError catch (e) {
+      print(e.response?.data);
+      return false;
+    } catch (e) {
+      return false;
     }
 
-    return false;
   }
 
   static Future<bool> inviteToTeam({
     required String teamId,
     required String toId,
   }) async {
-    Response? response = await BilfootClient().sendRequest(
-      path: "team/invite-to-team",
-      body: {
-        "team_id": teamId,
-        "to_id": toId,
-      },
-      method: Method.post,
-    );
+    try {
+      var response = await BilfootClient().dio.post(
+          "${BilfootClient.baseUrl}team/invite-to-team",
+          data: {
+            "team_id": teamId,
+            "to_id": toId,
+          });
 
-    if (response == null) {
-      //TODO
-      print("null response inviteToTeam");
+      if (response.statusCode == null) {
+        return false;
+      } else if (response.statusCode! >= 400) {
+        return false;
+      }
+
+      print(response.data);
+
+      return true;
+    } on DioError catch (e) {
+      print(e.response?.data);
+      return false;
+    } catch (e) {
       return false;
     }
 
-    if (response.statusCode >= 400) {
-      //TODO
-      print("error status inviteToTeam");
-      print(response.body);
-      return false;
-    }
-
-    print(response.body);
-    return true;
   }
 
   static Future<bool> quitTeam({required String teamId}) async {
-    Response? response = await BilfootClient().sendRequest(
-      path: "team/quit-team",
-      body: {
-        "team_id": teamId,
-      },
-      method: Method.post,
-    );
+    try {
+      var response = await BilfootClient().dio.post(
+          "${BilfootClient.baseUrl}team/quit-team",
+          data: {
+            "team_id": teamId,
+          });
 
-    if (response == null) {
-      //TODO
-      print("null response quit team");
+      if (response.statusCode == null) {
+        return false;
+      } else if (response.statusCode! >= 400) {
+        return false;
+      }
+
+      print(response.data);
+
+      return true;
+    } on DioError catch (e) {
+      print(e.response?.data);
+      return false;
+    } catch (e) {
       return false;
     }
 
-    if (response.statusCode >= 400) {
-      //TODO
-      print("error status inviteToTeam");
-      print(response.body);
-      return false;
-    }
-
-    print(response.body);
-    return true;
   }
 
   static Future<bool> makeCaptain(
       {required String teamId, required String newCaptainId}) async {
-    Response? response = await BilfootClient().sendRequest(
-      path: "team/make-captain",
-      body: {
-        "team_id": teamId,
-        "new_captain_id": newCaptainId,
-      },
-      method: Method.post,
-    );
+    try {
+      var response = await BilfootClient().dio.post(
+          "${BilfootClient.baseUrl}team/make-captain",
+          data: {
+            "team_id": teamId,
+            "new_captain_id": newCaptainId,
+          });
 
-    if (response == null) {
-      //TODO
-      print("null response make captain");
+      if (response.statusCode == null) {
+        return false;
+      } else if (response.statusCode! >= 400) {
+        return false;
+      }
+
+      print(response.data);
+
+      return true;
+    } on DioError catch (e) {
+      print(e.response?.data);
+      return false;
+    } catch (e) {
       return false;
     }
 
-    if (response.statusCode >= 400) {
-      //TODO
-      print("error status inviteToTeam");
-      print(response.body);
-      return false;
-    }
-
-    print(response.body);
-    return true;
   }
 
   static Future<bool> kickPlayer(
       {required String teamId, required String kickedPlayerId}) async {
-    Response? response = await BilfootClient().sendRequest(
-      path: "team/kick-player",
-      body: {
-        "team_id": teamId,
-        "kicked_player_id": kickedPlayerId,
-      },
-      method: Method.post,
-    );
+    try {
+      var response = await BilfootClient().dio.post(
+          "${BilfootClient.baseUrl}team/kick-player",
+          data: {
+            "team_id": teamId,
+            "kicked_player_id": kickedPlayerId,
+          });
 
-    if (response == null) {
-      //TODO
-      print("null response kick player");
+      if (response.statusCode == null) {
+        return false;
+      } else if (response.statusCode! >= 400) {
+        return false;
+      }
+
+      print(response.data);
+
+      return true;
+    } on DioError catch (e) {
+      print(e.response?.data);
+      return false;
+    } catch (e) {
       return false;
     }
 
-    if (response.statusCode >= 400) {
-      //TODO
-      print("error status kick player");
-      print(response.body);
-      return false;
-    }
-
-    print(response.body);
-    return true;
   }
 
   static Future<bool> editTeam({
@@ -263,30 +260,32 @@ class TeamService {
     String? accentColor,
     required String teamId,
   }) async {
-    Response? response = await BilfootClient().sendRequest(
-      path: "team/edit-team",
-      body: {
-        "name": teamName,
-        "short_name": shortName,
-        "main_color": mainColor,
-        "accent_color": accentColor,
-        "team_id": teamId
-      },
-      method: Method.post,
-    );
+    try {
+      var response = await BilfootClient().dio.post(
+          "${BilfootClient.baseUrl}team/edit-team",
+          data: {
+            "name": teamName,
+            "short_name": shortName,
+            "main_color": mainColor,
+            "accent_color": accentColor,
+            "team_id": teamId
+          });
 
-    if (response == null) {
-      //TODO
-      print("null response editTeam");
+      if (response.statusCode == null) {
+        return false;
+      } else if (response.statusCode! >= 400) {
+        return false;
+      }
+
+      print(response.data);
+
+      return true;
+    } on DioError catch (e) {
+      print(e.response?.data);
+      return false;
+    } catch (e) {
       return false;
     }
 
-    if (response.statusCode >= 400) {
-      //TODO
-      print("error status editTeam");
-      print(response.body);
-      return false;
-    }
-    return true;
   }
 }
